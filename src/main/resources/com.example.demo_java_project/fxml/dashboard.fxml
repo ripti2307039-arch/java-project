@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane fx:id="rootPane" xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.example.demo_java_project.controller.DashboardController"
+            stylesheets="@../css/dashboard.css">
+
+    <left>
+        <VBox styleClass="sidebar" spacing="6" prefWidth="220">
+            <Label text="SlotSync" styleClass="sidebar-brand" />
+            <Label fx:id="welcomeLabel" text="Welcome" styleClass="sidebar-welcome" wrapText="true" />
+
+            <VBox styleClass="sidebar-nav" spacing="4">
+                <Button text="Dashboard" styleClass="nav-button-active" maxWidth="Infinity" onAction="#handleDashboardNav" />
+                <Button text="My Bookings" styleClass="nav-button" maxWidth="Infinity" onAction="#handleMyBookingsNav" />
+                <Button text="Profile" styleClass="nav-button" maxWidth="Infinity" onAction="#handleProfileNav" />
+                <Button fx:id="adminButton" text="Admin Panel" styleClass="nav-button" maxWidth="Infinity" onAction="#handleAdminNav" visible="false" managed="false" />
+            </VBox>
+
+            <Region VBox.vgrow="ALWAYS" />
+
+            <Button text="Logout" styleClass="logout-button" maxWidth="Infinity" onAction="#handleLogout" />
+        </VBox>
+    </left>
+
+    <center>
+        <VBox styleClass="content-area" spacing="20">
+            <HBox alignment="CENTER_LEFT" spacing="12">
+                <VBox spacing="2">
+                    <Label text="Available Resources" styleClass="page-title" />
+                    <Label text="Pick a resource and book your slot" styleClass="page-subtitle" />
+                </VBox>
+                <Region HBox.hgrow="ALWAYS" />
+                <Label fx:id="resourceCountLabel" text="0 resources" styleClass="resource-count-badge" />
+            </HBox>
+
+            <ScrollPane fitToWidth="true" styleClass="resource-scroll">
+                <FlowPane fx:id="resourceContainer" hgap="18" vgap="18" styleClass="resource-flow-pane" />
+            </ScrollPane>
+        </VBox>
+    </center>
+
+</BorderPane>

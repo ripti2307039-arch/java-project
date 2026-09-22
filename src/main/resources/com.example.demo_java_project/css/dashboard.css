@@ -1,0 +1,180 @@
+.root {
+    -fx-background-color: #0d0d1a;
+}
+
+.sidebar {
+    -fx-background-color: linear-gradient(to bottom, #1e0f3c, #0d0d1a);
+    -fx-padding: 24 16;
+    -fx-border-color: rgba(255, 255, 255, 0.08);
+    -fx-border-width: 0 1 0 0;
+}
+
+.sidebar-brand {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+    -fx-padding: 0 0 4 6;
+}
+
+.sidebar-welcome {
+    -fx-font-size: 12px;
+    -fx-text-fill: #9c9ab8;
+    -fx-padding: 0 0 20 6;
+}
+
+.sidebar-nav {
+    -fx-padding: 10 0 0 0;
+}
+
+.nav-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #b8b4d6;
+    -fx-font-size: 13px;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 12 14;
+    -fx-background-radius: 10;
+    -fx-cursor: hand;
+}
+
+.nav-button:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.06);
+    -fx-text-fill: white;
+}
+
+.nav-button-active {
+    -fx-background-color: linear-gradient(to right, #8e2de2, #4a00e0);
+    -fx-text-fill: white;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 12 14;
+    -fx-background-radius: 10;
+    -fx-cursor: hand;
+}
+
+.logout-button {
+    -fx-background-color: rgba(255, 107, 107, 0.12);
+    -fx-text-fill: #ff6b6b;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-alignment: CENTER;
+    -fx-padding: 12 14;
+    -fx-background-radius: 10;
+    -fx-cursor: hand;
+}
+
+.logout-button:hover {
+    -fx-background-color: rgba(255, 107, 107, 0.22);
+}
+
+.content-area {
+    -fx-background-color: #0d0d1a;
+    -fx-padding: 32;
+}
+
+.page-title {
+    -fx-font-size: 26px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+.page-subtitle {
+    -fx-font-size: 13px;
+    -fx-text-fill: #9c9ab8;
+}
+
+.resource-count-badge {
+    -fx-background-color: rgba(142, 45, 226, 0.18);
+    -fx-text-fill: #c9a6f5;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-padding: 6 14;
+    -fx-background-radius: 20;
+}
+
+.resource-scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+
+.resource-flow-pane {
+    -fx-background-color: transparent;
+    -fx-padding: 4 0 20 0;
+}
+
+.resource-card {
+    -fx-background-color: rgba(255, 255, 255, 0.05);
+    -fx-background-radius: 16;
+    -fx-border-color: rgba(255, 255, 255, 0.12);
+    -fx-border-radius: 16;
+    -fx-border-width: 1;
+    -fx-padding: 20;
+    -fx-pref-width: 260;
+    -fx-cursor: hand;
+}
+
+.resource-card:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.09);
+    -fx-border-color: #8e2de2;
+    -fx-effect: dropshadow(gaussian, rgba(142, 45, 226, 0.35), 20, 0.2, 0, 6);
+}
+
+.resource-icon-badge {
+    -fx-background-color: linear-gradient(to bottom right, #8e2de2, #4a00e0);
+    -fx-background-radius: 12;
+    -fx-min-width: 44;
+    -fx-min-height: 44;
+    -fx-max-width: 44;
+    -fx-max-height: 44;
+    -fx-alignment: CENTER;
+}
+
+.resource-icon-text {
+    -fx-font-size: 18px;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.resource-name {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+.resource-type {
+    -fx-font-size: 11px;
+    -fx-text-fill: #c9a6f5;
+    -fx-background-color: rgba(142, 45, 226, 0.15);
+    -fx-padding: 3 10;
+    -fx-background-radius: 12;
+}
+
+.resource-location {
+    -fx-font-size: 12px;
+    -fx-text-fill: #9c9ab8;
+}
+
+.resource-description {
+    -fx-font-size: 12px;
+    -fx-text-fill: #b8b4d6;
+}
+
+.book-now-button {
+    -fx-background-color: rgba(142, 45, 226, 0.15);
+    -fx-text-fill: #c9a6f5;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-padding: 8 0;
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
+}
+
+.book-now-button:hover {
+    -fx-background-color: linear-gradient(to right, #8e2de2, #4a00e0);
+    -fx-text-fill: white;
+}
+
+.empty-state-label {
+    -fx-font-size: 14px;
+    -fx-text-fill: #706c8c;
+}

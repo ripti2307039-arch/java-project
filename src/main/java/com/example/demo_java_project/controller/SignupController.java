@@ -1,5 +1,6 @@
 package com.example.demo_java_project.controller;
 
+import com.example.demo_java_project.SlotSyncApplication;
 import com.example.demo_java_project.service.AuthService;
 import javafx.animation.FadeTransition;
 import javafx.concurrent.Task;
@@ -12,13 +13,16 @@ import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.util.Duration;
-import com.example.demo_java_project.SlotSyncApplication;
+
 import java.io.IOException;
 
-public class LoginController {
+public class SignupController {
 
     @FXML
     private HBox rootPane;
+
+    @FXML
+    private TextField fullNameField;
 
     @FXML
     private TextField emailField;
@@ -27,16 +31,19 @@ public class LoginController {
     private PasswordField passwordField;
 
     @FXML
-    private Button loginButton;
+    private PasswordField confirmPasswordField;
 
     @FXML
-    private Label errorLabel;
+    private Button signupButton;
+
+    @FXML
+    private Label messageLabel;
 
     @FXML
     private ProgressIndicator loadingIndicator;
 
     @FXML
-    private Hyperlink signupLink;
+    private Hyperlink loginLink;
 
     private final AuthService authService = new AuthService();
 
@@ -51,80 +58,85 @@ public class LoginController {
     }
 
     @FXML
-    private void handleLogin() {
+    private void handleSignup() {
+        String fullName = fullNameField.getText();
         String email = emailField.getText();
         String password = passwordField.getText();
+        String confirmPassword = confirmPasswordField.getText();
 
         hideMessage();
+
+        if (!password.equals(confirmPassword)) {
+            showError("Passwords do not match");
+            return;
+        }
+
         setLoading(true);
 
-        Task<AuthService.AuthResult> loginTask = new Task<>() {
+        Task<AuthService.AuthResult> signupTask = new Task<>() {
             @Override
             protected AuthService.AuthResult call() {
-                return authService.login(email, password);
+                return authService.signup(fullName, email, password);
             }
         };
 
-        loginTask.setOnSucceeded(event -> {
+        signupTask.setOnSucceeded(event -> {
             setLoading(false);
-            AuthService.AuthResult result = loginTask.getValue();
+            AuthService.AuthResult result = signupTask.getValue();
             if (result.isSuccess()) {
-                try {
-                    SlotSyncApplication.setRoot("dashboard", 1100, 700);
-                } catch (IOException e) {
-                    showError("Unable to load dashboard");
-                }
+                showSuccess("Account created. You can now log in");
             } else {
                 showError(result.getErrorMessage());
             }
         });
-        loginTask.setOnFailed(event -> {
+
+        signupTask.setOnFailed(event -> {
             setLoading(false);
             showError("Something went wrong. Please try again");
         });
 
-        Thread loginThread = new Thread(loginTask);
-        loginThread.setDaemon(true);
-        loginThread.start();
+        Thread signupThread = new Thread(signupTask);
+        signupThread.setDaemon(true);
+        signupThread.start();
     }
 
     @FXML
-    private void handleSignupLink() {
+    private void handleLoginLink() {
         try {
-            SlotSyncApplication.setRoot("signup", 1000, 650);
+            SlotSyncApplication.setRoot("login", 1000, 650);
         } catch (IOException e) {
-            showError("Unable to load signup screen");
+            showError("Unable to load login screen");
         }
     }
 
     private void setLoading(boolean loading) {
-        loginButton.setDisable(loading);
+        signupButton.setDisable(loading);
         loadingIndicator.setVisible(loading);
         loadingIndicator.setManaged(loading);
     }
 
     private void showError(String message) {
-        errorLabel.getStyleClass().remove("success-label");
-        if (!errorLabel.getStyleClass().contains("error-label")) {
-            errorLabel.getStyleClass().add("error-label");
+        messageLabel.getStyleClass().remove("success-label");
+        if (!messageLabel.getStyleClass().contains("error-label")) {
+            messageLabel.getStyleClass().add("error-label");
         }
-        errorLabel.setText(message);
-        errorLabel.setVisible(true);
-        errorLabel.setManaged(true);
+        messageLabel.setText(message);
+        messageLabel.setVisible(true);
+        messageLabel.setManaged(true);
     }
 
     private void showSuccess(String message) {
-        errorLabel.getStyleClass().remove("error-label");
-        if (!errorLabel.getStyleClass().contains("success-label")) {
-            errorLabel.getStyleClass().add("success-label");
+        messageLabel.getStyleClass().remove("error-label");
+        if (!messageLabel.getStyleClass().contains("success-label")) {
+            messageLabel.getStyleClass().add("success-label");
         }
-        errorLabel.setText(message);
-        errorLabel.setVisible(true);
-        errorLabel.setManaged(true);
+        messageLabel.setText(message);
+        messageLabel.setVisible(true);
+        messageLabel.setManaged(true);
     }
 
     private void hideMessage() {
-        errorLabel.setVisible(false);
-        errorLabel.setManaged(false);
+        messageLabel.setVisible(false);
+        messageLabel.setManaged(false);
     }
 }
