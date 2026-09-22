@@ -1,15 +1,23 @@
 package com.example.demo_java_project.controller;
 
 import com.example.demo_java_project.SlotSyncApplication;
+import com.example.demo_java_project.concurrency.BookingTask;
 import com.example.demo_java_project.model.Resource;
 import com.example.demo_java_project.model.User;
 import com.example.demo_java_project.service.AuthService;
+import com.example.demo_java_project.service.BookingService;
 import com.example.demo_java_project.service.ResourceService;
 import com.example.demo_java_project.session.SessionManager;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
@@ -18,6 +26,7 @@ import javafx.scene.layout.VBox;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 public class DashboardController {
 
@@ -38,6 +47,7 @@ public class DashboardController {
 
     private final ResourceService resourceService = new ResourceService();
     private final AuthService authService = new AuthService();
+    private final BookingService bookingService = new BookingService();
 
     @FXML
     public void initialize() {
@@ -77,7 +87,7 @@ public class DashboardController {
         HBox topRow = new HBox(12);
         VBox iconBadge = new VBox();
         iconBadge.getStyleClass().add("resource-icon-badge");
-        iconBadge.setAlignment(javafx.geometry.Pos.CENTER);
+        iconBadge.setAlignment(Pos.CENTER);
 
         Label iconLabel = new Label(resource.getName().substring(0, 1).toUpperCase());
         iconLabel.getStyleClass().add("resource-icon-text");
@@ -108,11 +118,107 @@ public class DashboardController {
         Button bookButton = new Button("Book Now");
         bookButton.getStyleClass().add("book-now-button");
         bookButton.setMaxWidth(Double.MAX_VALUE);
+        bookButton.setOnAction(event -> openBookingDialog(resource));
 
         card.getChildren().addAll(topRow, locationLabel, descriptionLabel, bookButton);
         card.setPadding(new Insets(20));
 
         return card;
+    }
+
+    private void openBookingDialog(Resource resource) {
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.setTitle("Book " + resource.getName());
+        dialog.getDialogPane().getStylesheets().add(
+                getClass().getResource("/com.example.demo_java_project/css/dashboard.css").toExternalForm());
+        dialog.getDialogPane().setStyle("-fx-background-color: #16162a;");
+
+        VBox content = new VBox(12);
+        content.setPadding(new Insets(10));
+
+        Label startLabel = new Label("Start Time (YYYY-MM-DD HH:MM)");
+        startLabel.setStyle("-fx-text-fill: #b8b4d6; -fx-font-size: 12px;");
+        TextField startField = new TextField();
+        startField.setPromptText("2026-01-15 10:00");
+
+        Label endLabel = new Label("End Time (YYYY-MM-DD HH:MM)");
+        endLabel.setStyle("-fx-text-fill: #b8b4d6; -fx-font-size: 12px;");
+        TextField endField = new TextField();
+        endField.setPromptText("2026-01-15 11:00");
+
+        Label statusLabel = new Label();
+        statusLabel.setWrapText(true);
+        statusLabel.setStyle("-fx-text-fill: #ff6b6b; -fx-font-size: 12px;");
+
+        content.getChildren().addAll(startLabel, startField, endLabel, endField, statusLabel);
+        dialog.getDialogPane().setContent(content);
+
+        ButtonType confirmButtonType = new ButtonType("Confirm Booking", ButtonType.OK.getButtonData());
+        dialog.getDialogPane().getButtonTypes().addAll(confirmButtonType, ButtonType.CANCEL);
+
+        dialog.setResultConverter(buttonType -> null);
+
+        Optional<Void> result;
+        Button confirmButton = (Button) dialog.getDialogPane().lookupButton(confirmButtonType);
+        confirmButton.addEventFilter(javafx.event.ActionEvent.ACTION, actionEvent -> {
+            String start = startField.getText();
+            String end = endField.getText();
+
+            if (start.isBlank() || end.isBlank()) {
+                statusLabel.setText("Both start and end time are required");
+                actionEvent.consume();
+                return;
+            }
+
+            actionEvent.consume();
+            confirmButton.setDisable(true);
+            statusLabel.setStyle("-fx-text-fill: #9c9ab8; -fx-font-size: 12px;");
+            statusLabel.setText("Checking availability and booking...");
+
+            User currentUser = SessionManager.getInstance().getCurrentUser();
+
+            Task<BookingTask.BookingResult> task = new Task<>() {
+                @Override
+                protected BookingTask.BookingResult call() {
+                    return bookingService.submitBookingRequest(
+                            currentUser.getId(), resource.getId(), start, end);
+                }
+            };
+
+            task.setOnSucceeded(e -> {
+                BookingTask.BookingResult bookingResult = task.getValue();
+                confirmButton.setDisable(false);
+
+                if (bookingResult.isSuccess()) {
+                    dialog.close();
+                    showAlert(Alert.AlertType.INFORMATION, "Booking Confirmed",
+                            "Your booking for " + resource.getName() + " has been confirmed");
+                } else {
+                    statusLabel.setStyle("-fx-text-fill: #ff6b6b; -fx-font-size: 12px;");
+                    statusLabel.setText(bookingResult.getErrorMessage());
+                }
+            });
+
+            task.setOnFailed(e -> {
+                confirmButton.setDisable(false);
+                statusLabel.setStyle("-fx-text-fill: #ff6b6b; -fx-font-size: 12px;");
+                statusLabel.setText("Something went wrong. Please try again");
+            });
+
+            Thread bookingThread = new Thread(task);
+            bookingThread.setDaemon(true);
+            bookingThread.start();
+        });
+
+        dialog.showAndWait();
+    }
+
+    private void showAlert(Alert.AlertType type, String title, String message) {
+        Alert alert = new Alert(type);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 
     @FXML
