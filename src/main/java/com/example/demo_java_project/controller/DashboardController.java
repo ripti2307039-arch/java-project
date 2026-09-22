@@ -225,15 +225,23 @@ public class DashboardController {
     private void handleDashboardNav() {
         loadResources();
     }
-
     @FXML
     private void handleMyBookingsNav() {
+        try {
+            SlotSyncApplication.setRoot("my-bookings", 1100, 700);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @FXML
     private void handleProfileNav() {
+        try {
+            SlotSyncApplication.setRoot("profile", 1100, 700);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
-
     @FXML
     private void handleAdminNav() {
     }
