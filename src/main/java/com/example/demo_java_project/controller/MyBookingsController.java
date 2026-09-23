@@ -126,6 +126,11 @@ public class MyBookingsController {
 
     @FXML
     private void handleAdminNav() {
+        try {
+            SlotSyncApplication.setRoot("admin-dashboard", 1100, 700);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @FXML

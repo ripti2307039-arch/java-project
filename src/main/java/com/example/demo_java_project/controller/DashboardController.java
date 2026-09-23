@@ -6,6 +6,7 @@ import com.example.demo_java_project.model.Resource;
 import com.example.demo_java_project.model.User;
 import com.example.demo_java_project.service.AuthService;
 import com.example.demo_java_project.service.BookingService;
+import com.example.demo_java_project.service.NotificationService;
 import com.example.demo_java_project.service.ResourceService;
 import com.example.demo_java_project.session.SessionManager;
 import javafx.concurrent.Task;
@@ -43,11 +44,15 @@ public class DashboardController {
     private Button adminButton;
 
     @FXML
+    private Button syncButton;
+
+    @FXML
     private FlowPane resourceContainer;
 
     private final ResourceService resourceService = new ResourceService();
     private final AuthService authService = new AuthService();
     private final BookingService bookingService = new BookingService();
+    private final NotificationService notificationService = new NotificationService();
 
     @FXML
     public void initialize() {
@@ -158,7 +163,6 @@ public class DashboardController {
 
         dialog.setResultConverter(buttonType -> null);
 
-        Optional<Void> result;
         Button confirmButton = (Button) dialog.getDialogPane().lookupButton(confirmButtonType);
         confirmButton.addEventFilter(javafx.event.ActionEvent.ACTION, actionEvent -> {
             String start = startField.getText();
@@ -213,6 +217,37 @@ public class DashboardController {
         dialog.showAndWait();
     }
 
+    @FXML
+    private void handleSyncNotifications() {
+        User currentUser = SessionManager.getInstance().getCurrentUser();
+        syncButton.setDisable(true);
+        syncButton.setText("Syncing...");
+
+        Task<Integer> syncTask = new Task<>() {
+            @Override
+            protected Integer call() {
+                return notificationService.fetchExternalNotifications(currentUser.getId(), 5);
+            }
+        };
+
+        syncTask.setOnSucceeded(event -> {
+            syncButton.setDisable(false);
+            syncButton.setText("Sync Notifications");
+            int count = syncTask.getValue();
+            showAlert(Alert.AlertType.INFORMATION, "Sync Complete", count + " notifications fetched and saved");
+        });
+
+        syncTask.setOnFailed(event -> {
+            syncButton.setDisable(false);
+            syncButton.setText("Sync Notifications");
+            showAlert(Alert.AlertType.ERROR, "Sync Failed", "Could not fetch notifications. Check your internet connection");
+        });
+
+        Thread syncThread = new Thread(syncTask);
+        syncThread.setDaemon(true);
+        syncThread.start();
+    }
+
     private void showAlert(Alert.AlertType type, String title, String message) {
         Alert alert = new Alert(type);
         alert.setTitle(title);
@@ -225,6 +260,7 @@ public class DashboardController {
     private void handleDashboardNav() {
         loadResources();
     }
+
     @FXML
     private void handleMyBookingsNav() {
         try {
@@ -242,8 +278,14 @@ public class DashboardController {
             e.printStackTrace();
         }
     }
+
     @FXML
     private void handleAdminNav() {
+        try {
+            SlotSyncApplication.setRoot("admin-dashboard", 1100, 700);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @FXML

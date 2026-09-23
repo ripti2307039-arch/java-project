@@ -26,6 +26,8 @@
                 <Button fx:id="adminButton" text="Admin Panel" styleClass="nav-button" maxWidth="Infinity" onAction="#handleAdminNav" visible="false" managed="false" />
             </VBox>
 
+            <Button fx:id="syncButton" text="Sync Notifications" styleClass="nav-button" maxWidth="Infinity" onAction="#handleSyncNotifications" />
+
             <Region VBox.vgrow="ALWAYS" />
 
             <Button text="Logout" styleClass="logout-button" maxWidth="Infinity" onAction="#handleLogout" />
