@@ -18,17 +18,20 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.DateCell;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -195,6 +198,23 @@ public class DashboardController {
         return hour;
     }
 
+    /**
+     * Creates a DatePicker day cell that greys out and disables any date
+     * before today, so users cannot pick a past date from the calendar.
+     */
+    private DateCell createPastDateDisabledCell() {
+        return new DateCell() {
+            @Override
+            public void updateItem(LocalDate date, boolean empty) {
+                super.updateItem(date, empty);
+                if (date != null && date.isBefore(LocalDate.now())) {
+                    setDisable(true);
+                    setStyle("-fx-background-color: #2a2a40; -fx-opacity: 0.4;");
+                }
+            }
+        };
+    }
+
     private void openBookingDialog(Resource resource) {
         Dialog<Void> dialog = new Dialog<>();
         dialog.setTitle("Book " + resource.getName());
@@ -213,6 +233,7 @@ public class DashboardController {
         startDatePicker.setMaxWidth(Double.MAX_VALUE);
         startDatePicker.setEditable(false);
         startDatePicker.getEditor().setDisable(true);
+        startDatePicker.setDayCellFactory(picker -> createPastDateDisabledCell());
 
         // ---- Start time (hour / minute / AM-PM) ----
         Label startTimeLabel = new Label("Start Time");
@@ -221,9 +242,9 @@ public class DashboardController {
         ComboBox<Integer> startMinuteBox = buildMinuteComboBox();
         ComboBox<String> startAmPmBox = buildAmPmComboBox();
         HBox startTimeRow = new HBox(8, startHourBox, startMinuteBox, startAmPmBox);
-        HBox.setHgrow(startHourBox, javafx.scene.layout.Priority.ALWAYS);
-        HBox.setHgrow(startMinuteBox, javafx.scene.layout.Priority.ALWAYS);
-        HBox.setHgrow(startAmPmBox, javafx.scene.layout.Priority.ALWAYS);
+        HBox.setHgrow(startHourBox, Priority.ALWAYS);
+        HBox.setHgrow(startMinuteBox, Priority.ALWAYS);
+        HBox.setHgrow(startAmPmBox, Priority.ALWAYS);
 
         // ---- End date ----
         Label endDateLabel = new Label("End Date");
@@ -233,6 +254,7 @@ public class DashboardController {
         endDatePicker.setMaxWidth(Double.MAX_VALUE);
         endDatePicker.setEditable(false);
         endDatePicker.getEditor().setDisable(true);
+        endDatePicker.setDayCellFactory(picker -> createPastDateDisabledCell());
 
         // ---- End time (hour / minute / AM-PM) ----
         Label endTimeLabel = new Label("End Time");
@@ -241,9 +263,9 @@ public class DashboardController {
         ComboBox<Integer> endMinuteBox = buildMinuteComboBox();
         ComboBox<String> endAmPmBox = buildAmPmComboBox();
         HBox endTimeRow = new HBox(8, endHourBox, endMinuteBox, endAmPmBox);
-        HBox.setHgrow(endHourBox, javafx.scene.layout.Priority.ALWAYS);
-        HBox.setHgrow(endMinuteBox, javafx.scene.layout.Priority.ALWAYS);
-        HBox.setHgrow(endAmPmBox, javafx.scene.layout.Priority.ALWAYS);
+        HBox.setHgrow(endHourBox, Priority.ALWAYS);
+        HBox.setHgrow(endMinuteBox, Priority.ALWAYS);
+        HBox.setHgrow(endAmPmBox, Priority.ALWAYS);
 
         Label statusLabel = new Label();
         statusLabel.setWrapText(true);
@@ -296,14 +318,26 @@ public class DashboardController {
             LocalTime startTime = LocalTime.of(to24Hour(startHour, startAmPm), startMinute);
             LocalTime endTime = LocalTime.of(to24Hour(endHour, endAmPm), endMinute);
 
-            String start = startDate.format(DATE_FORMAT) + " " + startTime.format(TIME_FORMAT);
-            String end = endDate.format(DATE_FORMAT) + " " + endTime.format(TIME_FORMAT);
+            LocalDateTime startDateTime = LocalDateTime.of(startDate, startTime);
+            LocalDateTime endDateTime = LocalDateTime.of(endDate, endTime);
 
-            if (end.compareTo(start) <= 0) {
+            // Extra safety net: even though the calendar greys out past dates,
+            // a user could still pick TODAY's date with a past time (e.g. it's
+            // 3 PM now but they pick 9 AM today). Catch that here too.
+            if (startDateTime.isBefore(LocalDateTime.now())) {
+                statusLabel.setText("Start date/time cannot be in the past");
+                actionEvent.consume();
+                return;
+            }
+
+            if (!endDateTime.isAfter(startDateTime)) {
                 statusLabel.setText("End date/time must be after start date/time");
                 actionEvent.consume();
                 return;
             }
+
+            String start = startDate.format(DATE_FORMAT) + " " + startTime.format(TIME_FORMAT);
+            String end = endDate.format(DATE_FORMAT) + " " + endTime.format(TIME_FORMAT);
 
             actionEvent.consume();
             confirmButton.setDisable(true);
