@@ -9,6 +9,7 @@ import com.example.demo_java_project.service.BookingService;
 import com.example.demo_java_project.service.NotificationService;
 import com.example.demo_java_project.service.ResourceService;
 import com.example.demo_java_project.session.SessionManager;
+import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
@@ -16,9 +17,10 @@ import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.DatePicker;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
@@ -26,6 +28,9 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 
@@ -53,6 +58,9 @@ public class DashboardController {
     private final AuthService authService = new AuthService();
     private final BookingService bookingService = new BookingService();
     private final NotificationService notificationService = new NotificationService();
+
+    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
 
     @FXML
     public void initialize() {
@@ -131,6 +139,62 @@ public class DashboardController {
         return card;
     }
 
+    // ---------- Small helpers for the AM/PM time ComboBoxes ----------
+
+    private ComboBox<Integer> buildHourComboBox() {
+        ComboBox<Integer> hourBox = new ComboBox<>(
+                FXCollections.observableArrayList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12));
+        hourBox.setPromptText("Hour");
+        hourBox.setMaxWidth(Double.MAX_VALUE);
+        return hourBox;
+    }
+
+    private ComboBox<Integer> buildMinuteComboBox() {
+        // 5-minute steps: 00, 05, 10, ... 55
+        ComboBox<Integer> minuteBox = new ComboBox<>();
+        for (int m = 0; m < 60; m += 5) {
+            minuteBox.getItems().add(m);
+        }
+        minuteBox.setPromptText("Minute");
+        minuteBox.setMaxWidth(Double.MAX_VALUE);
+        minuteBox.setConverter(new javafx.util.StringConverter<>() {
+            @Override
+            public String toString(Integer value) {
+                return value == null ? "" : String.format("%02d", value);
+            }
+
+            @Override
+            public Integer fromString(String string) {
+                try {
+                    return Integer.parseInt(string);
+                } catch (NumberFormatException ex) {
+                    return null;
+                }
+            }
+        });
+        return minuteBox;
+    }
+
+    private ComboBox<String> buildAmPmComboBox() {
+        ComboBox<String> ampmBox = new ComboBox<>(
+                FXCollections.observableArrayList("AM", "PM"));
+        ampmBox.setPromptText("AM/PM");
+        ampmBox.setMaxWidth(Double.MAX_VALUE);
+        return ampmBox;
+    }
+
+    /**
+     * Converts 12-hour (hour 1-12, am/pm) to 24-hour format.
+     * 12 AM -> 0, 12 PM -> 12, otherwise straightforward.
+     */
+    private int to24Hour(int hour12, String amPm) {
+        int hour = hour12 % 12; // 12 becomes 0
+        if ("PM".equals(amPm)) {
+            hour += 12;
+        }
+        return hour;
+    }
+
     private void openBookingDialog(Resource resource) {
         Dialog<Void> dialog = new Dialog<>();
         dialog.setTitle("Book " + resource.getName());
@@ -141,21 +205,54 @@ public class DashboardController {
         VBox content = new VBox(12);
         content.setPadding(new Insets(10));
 
-        Label startLabel = new Label("Start Time (YYYY-MM-DD HH:MM)");
-        startLabel.setStyle("-fx-text-fill: #b8b4d6; -fx-font-size: 12px;");
-        TextField startField = new TextField();
-        startField.setPromptText("2026-01-15 10:00");
+        // ---- Start date ----
+        Label startDateLabel = new Label("Start Date");
+        startDateLabel.setStyle("-fx-text-fill: #b8b4d6; -fx-font-size: 12px;");
+        DatePicker startDatePicker = new DatePicker();
+        startDatePicker.setPromptText("Select start date");
+        startDatePicker.setMaxWidth(Double.MAX_VALUE);
+        startDatePicker.setEditable(false);
+        startDatePicker.getEditor().setDisable(true);
 
-        Label endLabel = new Label("End Time (YYYY-MM-DD HH:MM)");
-        endLabel.setStyle("-fx-text-fill: #b8b4d6; -fx-font-size: 12px;");
-        TextField endField = new TextField();
-        endField.setPromptText("2026-01-15 11:00");
+        // ---- Start time (hour / minute / AM-PM) ----
+        Label startTimeLabel = new Label("Start Time");
+        startTimeLabel.setStyle("-fx-text-fill: #b8b4d6; -fx-font-size: 12px;");
+        ComboBox<Integer> startHourBox = buildHourComboBox();
+        ComboBox<Integer> startMinuteBox = buildMinuteComboBox();
+        ComboBox<String> startAmPmBox = buildAmPmComboBox();
+        HBox startTimeRow = new HBox(8, startHourBox, startMinuteBox, startAmPmBox);
+        HBox.setHgrow(startHourBox, javafx.scene.layout.Priority.ALWAYS);
+        HBox.setHgrow(startMinuteBox, javafx.scene.layout.Priority.ALWAYS);
+        HBox.setHgrow(startAmPmBox, javafx.scene.layout.Priority.ALWAYS);
+
+        // ---- End date ----
+        Label endDateLabel = new Label("End Date");
+        endDateLabel.setStyle("-fx-text-fill: #b8b4d6; -fx-font-size: 12px;");
+        DatePicker endDatePicker = new DatePicker();
+        endDatePicker.setPromptText("Select end date");
+        endDatePicker.setMaxWidth(Double.MAX_VALUE);
+        endDatePicker.setEditable(false);
+        endDatePicker.getEditor().setDisable(true);
+
+        // ---- End time (hour / minute / AM-PM) ----
+        Label endTimeLabel = new Label("End Time");
+        endTimeLabel.setStyle("-fx-text-fill: #b8b4d6; -fx-font-size: 12px;");
+        ComboBox<Integer> endHourBox = buildHourComboBox();
+        ComboBox<Integer> endMinuteBox = buildMinuteComboBox();
+        ComboBox<String> endAmPmBox = buildAmPmComboBox();
+        HBox endTimeRow = new HBox(8, endHourBox, endMinuteBox, endAmPmBox);
+        HBox.setHgrow(endHourBox, javafx.scene.layout.Priority.ALWAYS);
+        HBox.setHgrow(endMinuteBox, javafx.scene.layout.Priority.ALWAYS);
+        HBox.setHgrow(endAmPmBox, javafx.scene.layout.Priority.ALWAYS);
 
         Label statusLabel = new Label();
         statusLabel.setWrapText(true);
         statusLabel.setStyle("-fx-text-fill: #ff6b6b; -fx-font-size: 12px;");
 
-        content.getChildren().addAll(startLabel, startField, endLabel, endField, statusLabel);
+        content.getChildren().addAll(
+                startDateLabel, startDatePicker, startTimeLabel, startTimeRow,
+                endDateLabel, endDatePicker, endTimeLabel, endTimeRow,
+                statusLabel);
         dialog.getDialogPane().setContent(content);
 
         ButtonType confirmButtonType = new ButtonType("Confirm Booking", ButtonType.OK.getButtonData());
@@ -165,11 +262,45 @@ public class DashboardController {
 
         Button confirmButton = (Button) dialog.getDialogPane().lookupButton(confirmButtonType);
         confirmButton.addEventFilter(javafx.event.ActionEvent.ACTION, actionEvent -> {
-            String start = startField.getText();
-            String end = endField.getText();
 
-            if (start.isBlank() || end.isBlank()) {
-                statusLabel.setText("Both start and end time are required");
+            LocalDate startDate = startDatePicker.getValue();
+            LocalDate endDate = endDatePicker.getValue();
+
+            Integer startHour = startHourBox.getValue();
+            Integer startMinute = startMinuteBox.getValue();
+            String startAmPm = startAmPmBox.getValue();
+
+            Integer endHour = endHourBox.getValue();
+            Integer endMinute = endMinuteBox.getValue();
+            String endAmPm = endAmPmBox.getValue();
+
+            // ---- Validation ----
+            if (startDate == null || endDate == null) {
+                statusLabel.setText("Please select both start and end date");
+                actionEvent.consume();
+                return;
+            }
+
+            if (startHour == null || startMinute == null || startAmPm == null) {
+                statusLabel.setText("Please select start time (hour, minute, AM/PM)");
+                actionEvent.consume();
+                return;
+            }
+
+            if (endHour == null || endMinute == null || endAmPm == null) {
+                statusLabel.setText("Please select end time (hour, minute, AM/PM)");
+                actionEvent.consume();
+                return;
+            }
+
+            LocalTime startTime = LocalTime.of(to24Hour(startHour, startAmPm), startMinute);
+            LocalTime endTime = LocalTime.of(to24Hour(endHour, endAmPm), endMinute);
+
+            String start = startDate.format(DATE_FORMAT) + " " + startTime.format(TIME_FORMAT);
+            String end = endDate.format(DATE_FORMAT) + " " + endTime.format(TIME_FORMAT);
+
+            if (end.compareTo(start) <= 0) {
+                statusLabel.setText("End date/time must be after start date/time");
                 actionEvent.consume();
                 return;
             }
