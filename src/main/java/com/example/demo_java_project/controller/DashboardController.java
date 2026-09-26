@@ -36,6 +36,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 public class DashboardController {
 
@@ -280,6 +281,48 @@ public class DashboardController {
         ButtonType confirmButtonType = new ButtonType("Confirm Booking", ButtonType.OK.getButtonData());
         dialog.getDialogPane().getButtonTypes().addAll(confirmButtonType, ButtonType.CANCEL);
 
+        // Tracks whether the booking actually succeeded, so the close-confirmation
+        // below doesn't pop up again right after a successful booking closes the
+        // dialog itself. Uses a 1-element array because a lambda can only
+        // capture "effectively final" variables, and we need to mutate this flag
+        // later inside the confirm button's action handler.
+        boolean[] bookingSucceeded = {false};
+
+        // ---- Helper to check whether the user has entered anything ----
+        Supplier<Boolean> hasUnsavedData = () ->
+                startDatePicker.getValue() != null
+                        || endDatePicker.getValue() != null
+                        || startHourBox.getValue() != null
+                        || startMinuteBox.getValue() != null
+                        || startAmPmBox.getValue() != null
+                        || endHourBox.getValue() != null
+                        || endMinuteBox.getValue() != null
+                        || endAmPmBox.getValue() != null;
+
+        // Intercept ANY way of closing the dialog (Cancel button, the window's
+        // X button, pressing Escape) and ask for confirmation if the user has
+        // already selected some date/time values, so they don't lose their
+        // input by accident.
+        dialog.setOnCloseRequest(closeEvent -> {
+            // If the dialog is closing because the booking already succeeded,
+            // don't ask for confirmation again.
+            if (bookingSucceeded[0]) {
+                return;
+            }
+
+            if (hasUnsavedData.get()) {
+                Alert confirmClose = new Alert(Alert.AlertType.CONFIRMATION);
+                confirmClose.setTitle("Discard booking?");
+                confirmClose.setHeaderText(null);
+                confirmClose.setContentText("You have entered some date/time details. Are you sure you want to cancel this booking?");
+
+                Optional<ButtonType> choice = confirmClose.showAndWait();
+                if (choice.isEmpty() || choice.get() != ButtonType.OK) {
+                    closeEvent.consume(); // stay on the dialog
+                }
+            }
+        });
+
         dialog.setResultConverter(buttonType -> null);
 
         Button confirmButton = (Button) dialog.getDialogPane().lookupButton(confirmButtonType);
@@ -359,6 +402,7 @@ public class DashboardController {
                 confirmButton.setDisable(false);
 
                 if (bookingResult.isSuccess()) {
+                    bookingSucceeded[0] = true;
                     dialog.close();
                     showAlert(Alert.AlertType.INFORMATION, "Booking Confirmed",
                             "Your booking for " + resource.getName() + " has been confirmed");
