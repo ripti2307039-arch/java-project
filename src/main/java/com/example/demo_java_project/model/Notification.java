@@ -2,9 +2,7 @@ package com.example.demo_java_project.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class Notification {
-
-    private int id;
+public class Notification extends BaseEntity {
 
     @JsonProperty("user_id")
     private int userId;
@@ -14,18 +12,14 @@ public class Notification {
     @JsonProperty("is_read")
     private boolean isRead;
 
-    @JsonProperty("created_at")
-    private String createdAt;
-
     public Notification() {
     }
 
     public Notification(int id, int userId, String message, boolean isRead, String createdAt) {
-        this.id = id;
+        super(id, createdAt);
         this.userId = userId;
         this.message = message;
         this.isRead = isRead;
-        this.createdAt = createdAt;
     }
 
     // Convenience constructor for creating a NEW notification
@@ -36,14 +30,6 @@ public class Notification {
     }
 
     // ---- Getters and Setters ----
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
 
     public int getUserId() {
         return userId;
@@ -69,12 +55,9 @@ public class Notification {
         isRead = read;
     }
 
-    public String getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(String createdAt) {
-        this.createdAt = createdAt;
+    @Override
+    public String getSummary() {
+        return (isRead ? "[Read] " : "[Unread] ") + message;
     }
 
     @Override

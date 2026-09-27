@@ -3,10 +3,7 @@ package com.example.demo_java_project.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-
-public class User {
-
-    private int id;
+public class User extends BaseEntity {
 
     @JsonProperty("full_name")
     private String fullName;
@@ -19,9 +16,6 @@ public class User {
 
     private String role; // "USER" or "ADMIN"
 
-    @JsonProperty("created_at")
-    private String createdAt;
-
     // ---- Constructors ----
 
     public User() {
@@ -30,12 +24,11 @@ public class User {
 
     public User(int id, String fullName, String email, String passwordHash,
                 String role, String createdAt) {
-        this.id = id;
+        super(id, createdAt);
         this.fullName = fullName;
         this.email = email;
         this.passwordHash = passwordHash;
         this.role = role;
-        this.createdAt = createdAt;
     }
 
     // Convenience constructor for creating a NEW user (before it has an id or createdAt)
@@ -47,14 +40,6 @@ public class User {
     }
 
     // ---- Getters and Setters ----
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
 
     public String getFullName() {
         return fullName;
@@ -88,16 +73,13 @@ public class User {
         this.role = role;
     }
 
-    public String getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(String createdAt) {
-        this.createdAt = createdAt;
-    }
-
     public boolean isAdmin() {
         return "ADMIN".equalsIgnoreCase(role);
+    }
+
+    @Override
+    public String getSummary() {
+        return fullName + " (" + role + ")";
     }
 
     @Override
