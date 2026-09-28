@@ -30,6 +30,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 import java.io.IOException;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -143,8 +144,6 @@ public class DashboardController {
         return card;
     }
 
-    // ---------- Small helpers for the AM/PM time ComboBoxes ----------
-
     private ComboBox<Integer> buildHourComboBox() {
         ComboBox<Integer> hourBox = new ComboBox<>(
                 FXCollections.observableArrayList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12));
@@ -154,7 +153,6 @@ public class DashboardController {
     }
 
     private ComboBox<Integer> buildMinuteComboBox() {
-        // 5-minute steps: 00, 05, 10, ... 55
         ComboBox<Integer> minuteBox = new ComboBox<>();
         for (int m = 0; m < 60; m += 5) {
             minuteBox.getItems().add(m);
@@ -187,31 +185,30 @@ public class DashboardController {
         return ampmBox;
     }
 
-    /**
-     * Converts 12-hour (hour 1-12, am/pm) to 24-hour format.
-     * 12 AM -> 0, 12 PM -> 12, otherwise straightforward.
-     */
     private int to24Hour(int hour12, String amPm) {
-        int hour = hour12 % 12; // 12 becomes 0
+        int hour = hour12 % 12;
         if ("PM".equals(amPm)) {
             hour += 12;
         }
         return hour;
     }
 
-    /**
-     * Creates a DatePicker day cell that greys out and disables any date
-     * before today, so users cannot pick a past date from the calendar.
-     */
-    private DateCell createPastDateDisabledCell() {
+    private boolean isWeekend(LocalDate date) {
+        DayOfWeek day = date.getDayOfWeek();
+        return day == DayOfWeek.FRIDAY || day == DayOfWeek.SATURDAY;
+    }
+
+    private DateCell createUnavailableDateCell() {
         return new DateCell() {
             @Override
             public void updateItem(LocalDate date, boolean empty) {
                 super.updateItem(date, empty);
-                if (date != null && date.isBefore(LocalDate.now())) {
-                    setDisable(true);
-                    setStyle("-fx-background-color: #2a2a40; -fx-opacity: 0.4;");
-                }
+
+                boolean unavailable = date != null && !empty
+                        && (date.isBefore(LocalDate.now()) || isWeekend(date));
+
+                setDisable(unavailable);
+                setStyle(unavailable ? "-fx-background-color: #2a2a40; -fx-opacity: 0.4;" : "");
             }
         };
     }
@@ -226,7 +223,6 @@ public class DashboardController {
         VBox content = new VBox(12);
         content.setPadding(new Insets(10));
 
-        // ---- Start date ----
         Label startDateLabel = new Label("Start Date");
         startDateLabel.setStyle("-fx-text-fill: #b8b4d6; -fx-font-size: 12px;");
         DatePicker startDatePicker = new DatePicker();
@@ -234,9 +230,8 @@ public class DashboardController {
         startDatePicker.setMaxWidth(Double.MAX_VALUE);
         startDatePicker.setEditable(false);
         startDatePicker.getEditor().setDisable(true);
-        startDatePicker.setDayCellFactory(picker -> createPastDateDisabledCell());
+        startDatePicker.setDayCellFactory(picker -> createUnavailableDateCell());
 
-        // ---- Start time (hour / minute / AM-PM) ----
         Label startTimeLabel = new Label("Start Time");
         startTimeLabel.setStyle("-fx-text-fill: #b8b4d6; -fx-font-size: 12px;");
         ComboBox<Integer> startHourBox = buildHourComboBox();
@@ -247,7 +242,6 @@ public class DashboardController {
         HBox.setHgrow(startMinuteBox, Priority.ALWAYS);
         HBox.setHgrow(startAmPmBox, Priority.ALWAYS);
 
-        // ---- End date ----
         Label endDateLabel = new Label("End Date");
         endDateLabel.setStyle("-fx-text-fill: #b8b4d6; -fx-font-size: 12px;");
         DatePicker endDatePicker = new DatePicker();
@@ -255,9 +249,8 @@ public class DashboardController {
         endDatePicker.setMaxWidth(Double.MAX_VALUE);
         endDatePicker.setEditable(false);
         endDatePicker.getEditor().setDisable(true);
-        endDatePicker.setDayCellFactory(picker -> createPastDateDisabledCell());
+        endDatePicker.setDayCellFactory(picker -> createUnavailableDateCell());
 
-        // ---- End time (hour / minute / AM-PM) ----
         Label endTimeLabel = new Label("End Time");
         endTimeLabel.setStyle("-fx-text-fill: #b8b4d6; -fx-font-size: 12px;");
         ComboBox<Integer> endHourBox = buildHourComboBox();
@@ -281,14 +274,8 @@ public class DashboardController {
         ButtonType confirmButtonType = new ButtonType("Confirm Booking", ButtonType.OK.getButtonData());
         dialog.getDialogPane().getButtonTypes().addAll(confirmButtonType, ButtonType.CANCEL);
 
-        // Tracks whether the booking actually succeeded, so the close-confirmation
-        // below doesn't pop up again right after a successful booking closes the
-        // dialog itself. Uses a 1-element array because a lambda can only
-        // capture "effectively final" variables, and we need to mutate this flag
-        // later inside the confirm button's action handler.
         boolean[] bookingSucceeded = {false};
 
-        // ---- Helper to check whether the user has entered anything ----
         Supplier<Boolean> hasUnsavedData = () ->
                 startDatePicker.getValue() != null
                         || endDatePicker.getValue() != null
@@ -299,13 +286,7 @@ public class DashboardController {
                         || endMinuteBox.getValue() != null
                         || endAmPmBox.getValue() != null;
 
-        // Intercept ANY way of closing the dialog (Cancel button, the window's
-        // X button, pressing Escape) and ask for confirmation if the user has
-        // already selected some date/time values, so they don't lose their
-        // input by accident.
         dialog.setOnCloseRequest(closeEvent -> {
-            // If the dialog is closing because the booking already succeeded,
-            // don't ask for confirmation again.
             if (bookingSucceeded[0]) {
                 return;
             }
@@ -318,7 +299,7 @@ public class DashboardController {
 
                 Optional<ButtonType> choice = confirmClose.showAndWait();
                 if (choice.isEmpty() || choice.get() != ButtonType.OK) {
-                    closeEvent.consume(); // stay on the dialog
+                    closeEvent.consume();
                 }
             }
         });
@@ -339,9 +320,14 @@ public class DashboardController {
             Integer endMinute = endMinuteBox.getValue();
             String endAmPm = endAmPmBox.getValue();
 
-            // ---- Validation ----
             if (startDate == null || endDate == null) {
                 statusLabel.setText("Please select both start and end date");
+                actionEvent.consume();
+                return;
+            }
+
+            if (isWeekend(startDate) || isWeekend(endDate)) {
+                statusLabel.setText("Bookings are not available on Fridays and Saturdays");
                 actionEvent.consume();
                 return;
             }
@@ -364,9 +350,6 @@ public class DashboardController {
             LocalDateTime startDateTime = LocalDateTime.of(startDate, startTime);
             LocalDateTime endDateTime = LocalDateTime.of(endDate, endTime);
 
-            // Extra safety net: even though the calendar greys out past dates,
-            // a user could still pick TODAY's date with a past time (e.g. it's
-            // 3 PM now but they pick 9 AM today). Catch that here too.
             if (startDateTime.isBefore(LocalDateTime.now())) {
                 statusLabel.setText("Start date/time cannot be in the past");
                 actionEvent.consume();
