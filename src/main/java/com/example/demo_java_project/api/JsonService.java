@@ -14,6 +14,10 @@ public class JsonService {
         this.objectMapper = new ObjectMapper();
     }
 
+    public List<PublicHoliday> parseHolidayList(String json) throws JsonProcessingException {
+        return objectMapper.readValue(json, new TypeReference<List<PublicHoliday>>() {});
+    }
+
     public List<ExternalPost> parsePostList(String json) throws JsonProcessingException {
         return objectMapper.readValue(json, new TypeReference<List<ExternalPost>>() {});
     }
